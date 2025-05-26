@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice | Modern PDF Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- jsPDF and AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1744a4;
+      --accent: #f59e42;
+      --background: linear-gradient(135deg, #f7fafd 0%, #eaf1fb 100%);
+      --background-dark: linear-gradient(135deg, #181c26 0%, #23283a 100%);
+      --card-bg: rgba(255,255,255,0.89);
+      --card-bg-dark: rgba(34, 39, 54, 0.92);
+      --glass-blur: 16px;
+      --text-main: #23272f;
+      --text-main-dark: #f3f6fa;
+      --text-secondary: #6b7280;
+      --text-secondary-dark: #b8c1d6;
+      --border-radius: 22px;
+      --shadow: 0 6px 24px rgba(37, 99, 235, 0.09);
+      --shadow-dark: 0 6px 24px rgba(30, 41, 59, 0.24);
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 0 0 0;
+      transition: background var(--transition), color var(--transition);
+    }
+    body.dark {
+      background: var(--background-dark);
+      color: var(--text-main-dark);
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.5rem;
+      z-index: 100;
+      background: var(--card-bg);
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    body.dark .theme-toggle {
+      background: var(--card-bg-dark);
+      box-shadow: var(--shadow-dark);
+    }
+    h1 {
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 1.5em;
+      letter-spacing: -1.2px;
+      font-size: 2.4rem;
+      text-align: center;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      transition: background var(--transition);
+    }
+    body.dark h1 {
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+    .invoice-card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 2rem 2.2rem 1.5rem 2.2rem;
+      min-width: 320px;
+      max-width: 400px;
+      border-left: 7px solid var(--primary);
+      margin-bottom: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      outline: none;
+      backdrop-filter: blur(var(--glass-blur));
+      animation: fadeInCard 0.9s cubic-bezier(.4,0,.2,1);
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: scale(0.96);}
+      to { opacity: 1; transform: scale(1);}
+    }
+    body.dark .invoice-card {
+      background: var(--card-bg-dark);
+      box-shadow: var(--shadow-dark);
+      border-left: 7px solid var(--accent);
+    }
+    .invoice-card-logo {
+      display:flex;
+      align-items:center;
+      gap:1em;
+      margin-bottom:1.1em;
+    }
+    .invoice-card-logo img {
+      height:40px;
+      max-width:160px;
+      display:block;
+    }
+    .invoice-item {
+      display: flex;
+      align-items: flex-start;
+      font-size: 1.15rem;
+      transition: color var(--transition);
+    }
+    .invoice-label {
+      font-weight: 700;
+      color: var(--text-secondary);
+      min-width: 100px;
+      flex-shrink: 0;
+      letter-spacing: 0.01em;
+      font-size: 1.13rem;
+      transition: color var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    body.dark .invoice-label {
+      color: var(--text-secondary-dark);
+    }
+    .invoice-value {
+      color: var(--text-main);
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      font-weight: 600;
+      margin-left: 0.7em;
+      flex: 1;
+      font-size: 1.17rem;
+      transition: color var(--transition);
+      animation: textFadeIn 0.9s;
+      letter-spacing: 0.01em;
+      white-space: pre-line;
+    }
+    body.dark .invoice-value {
+      color: var(--text-main-dark);
+    }
+    @keyframes textFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .download-btn {
+      display: block;
+      margin: 2.5rem auto 0 auto;
+      padding: 0.9rem 2.5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background var(--transition), transform 0.14s, box-shadow var(--transition);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+      letter-spacing: 0.01em;
+      outline: none;
+      animation: fadeInCard 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .download-btn:disabled {
+      background: #b2c8f7;
+      cursor: not-allowed;
+    }
+    .download-btn:not(:disabled):hover {
+      background: var(--primary-dark);
+      transform: scale(1.03);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+    }
+    .not-found, .loading {
+      font-size: 1.2rem;
+      color: #ef4444;
+      margin-bottom: 2rem;
+      text-align: center;
+      animation: textFadeIn 1s;
+    }
+    .loading {
+      color: var(--primary);
+    }
+    .footer {
+      text-align: center;
+      margin-top: 3.5rem;
+      font-size: 0.93rem;
+      color: #9ca3af;
+      letter-spacing: 0.02em;
+      padding: 1.1em 0;
+      transition: background var(--transition), color var(--transition);
+    }
+    body.dark .footer {
+      color: #6b7280;
+    }
+    @media (max-width: 600px) {
+      .invoice-card {
+        min-width: 90vw;
+        max-width: 98vw;
+        padding: 1.2rem 0.7rem;
+      }
+      .theme-toggle {
+        top: 0.7rem;
+        right: 0.5rem;
+        width: 40px;
+        height: 40px;
+        font-size: 1.3rem;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 10px;
+      background: #eaf1fb;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c7d3ea;
+      border-radius: 10px;
+    }
+    body.dark ::-webkit-scrollbar {
+      background: #23283a;
+    }
+    body.dark ::-webkit-scrollbar-thumb {
+      background: #353a50;
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+  <h1>Invoice</h1>
+  <div id="invoice"></div>
+  <button class="download-btn" id="downloadBtn" style="display:none;">Download Invoice PDF</button>
+  <div class="footer">Designed by humans &middot; for humans</div>
+  <script>
+    // --- Dark Mode Toggle ---
+    const themeToggle = document.getElementById('themeToggle');
+    function setTheme(dark) {
+      document.body.classList.toggle('dark', dark);
+      themeToggle.innerHTML = dark ? '☀️' : '🌙';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark));
+    themeToggle.onclick = () => setTheme(!document.body.classList.contains('dark'));
+
+    // --- Utility: Parse minutes from duration string ---
+    function parseMinutes(durationStr) {
+      if (!durationStr) return 0;
+      const parts = durationStr.split(':').map(Number);
+      if (parts.length === 3) return parts[0] * 60 + parts[1];
+      if (parts.length === 2) return parts[0];
+      const match = durationStr.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    }
+    function getCharge(durationMinutes) {
+      if (durationMinutes >= 4 && durationMinutes < 7) return 10;
+      if (durationMinutes >= 7 && durationMinutes < 9) return 20;
+      if (durationMinutes >= 9 && durationMinutes < 11) return 30;
+      if (durationMinutes >= 11 && durationMinutes < 13) return 40;
+      if (durationMinutes >= 13 && durationMinutes <= 15) return 50;
+      return 0;
+    }
+
+    // --- Logo (replace with your actual logo path or base64 string) ---
+    const logoImg = "images/logo.png"; // e.g. "data:image/png;base64,..."
+
+    // --- Get TID from URL ---
+    const params = new URLSearchParams(window.location.search);
+    const tid = params.get('tid');
+    const invoiceDiv = document.getElementById('invoice');
+    const downloadBtn = document.getElementById('downloadBtn');
+    let tx = null;
+    let charge = 0;
+
+    // --- Fetch and Render Invoice ---
+    if (!tid) {
+      invoiceDiv.innerHTML = `<div class="not-found">No Transaction ID provided.</div>`;
+    } else {
+      invoiceDiv.innerHTML = `<div class="loading">Loading...</div>`;
+      fetch("https://siqolawsbucket.s3.us-east-1.amazonaws.com/Button_details.json")
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch data');
+          return res.json();
+        })
+        .then(transactions => {
+          tx = transactions.find(item => String(item.Tid) === tid);
+          if (tx) {
+            const minutes = parseMinutes(tx.Duration ?? '');
+            charge = getCharge(minutes);
+
+            invoiceDiv.innerHTML = `
+              <div class="invoice-card" id="invoiceCard">
+                <div class="invoice-item"><span class="invoice-label">TID:</span><span class="invoice-value">${tx.Tid ?? '-'}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Device ID:</span><span class="invoice-value">${(tx.Id ?? '-').replace(/(.{12})/g,"$1\n")}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Date:</span><span class="invoice-value">${tx.Date ?? '-'}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Time:</span><span class="invoice-value">${tx.Current_time ?? '-'}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Button:</span><span class="invoice-value">${tx.Btn ?? '-'}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Duration:</span><span class="invoice-value">${tx.Duration ?? '-'}</span></div>
+                <div class="invoice-item"><span class="invoice-label">Charge:</span><span class="invoice-value">$${charge}</span></div>
+                <hr style="margin:1.2rem 0;">
+                <div style="font-size:1.05rem;color:var(--text-secondary);">Thank you for your business!</div>
+              </div>
+            `;
+            downloadBtn.style.display = 'block';
+          } else {
+            invoiceDiv.innerHTML = `<div class="not-found">No transaction found for TID: <b>${tid}</b></div>`;
+            downloadBtn.style.display = 'none';
+          }
+        })
+        .catch(err => {
+          invoiceDiv.innerHTML = `<div class="not-found">Error loading transaction details.</div>`;
+          downloadBtn.style.display = 'none';
+        });
+    }
+
+    // --- PDF Generation (Professional Layout) ---
+    downloadBtn.addEventListener('click', function() {
+      if (!tx) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Draw logo (use addImage with onload for best results)
+      const logo = new window.Image();
+      logo.src = logoImg;
+      logo.onload = function() {
+        doc.addImage(logo, 'PNG', 14, 12, 38, 18);
+
+        // Company Info
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.text('Enamel Pure', 14, 34);
+        doc.setFontSize(10);
+        doc.text('17 Briden Street', 14, 39);
+        doc.text('Worcester, MA 01605', 14, 44);
+        doc.text('Phone: (862) 300-9856', 14, 49);
+
+        // INVOICE title (top right)
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(180, 180, 180);
+        doc.text('INVOICE', 160, 22);
+
+        // Invoice # and Date Table (top right)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.autoTable({
+          startY: 36,
+          head: [['INVOICE #', 'DATE']],
+          body: [[tx.Tid ?? '-', tx.Date ?? '-']],
+          theme: 'grid',
+          styles: { fontSize: 10, halign: 'center', cellPadding: 2 },
+          headStyles: { fillColor: [240,240,240], textColor: [0,0,0], fontStyle: 'bold' },
+          columnStyles: { 0: {cellWidth: 45}, 1: {cellWidth: 45} },
+          margin: { left: 135 }
+        });
+
+        // BILL TO Section
+        doc.setFillColor(240,240,240);
+        doc.rect(14, 58, 32, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('Bill to', 16, 63);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        let billToY = 68;
+        doc.text('Client', 14, billToY);
+        doc.text('Enamel Pure', 14, billToY + 5);
+        doc.text('-', 14, billToY + 10);
+        doc.text('-', 14, billToY + 15);
+        doc.text('-', 14, billToY + 20);
+        doc.text('-', 14, billToY + 25);
+
+        // Description/Amount Table
+        const minutes = parseMinutes(tx.Duration ?? '');
+        const deviceIdMultiline = (tx.Id ?? '-').replace(/(.{12})/g,"$1\n");
+        const tableBody = [
+          ['Service Fee', { content: charge, styles: { halign: 'right' } }],
+          ['Duration (min)', { content: minutes, styles: { halign: 'right' } }],
+          ['Device ID', { content: deviceIdMultiline, styles: { halign: 'right' } }],
+          ['Button', { content: tx.Btn ?? '-', styles: { halign: 'right' } }]
+        ];
+        doc.autoTable({
+          startY: 98,
+          head: [['DESCRIPTION', 'AMOUNT']],
+          body: tableBody,
+          theme: 'grid',
+          styles: { fontSize: 10, cellPadding: 2 },
+          headStyles: { fillColor: [220,220,220], textColor: [0,0,0], fontStyle: 'bold' },
+          columnStyles: { 0: {cellWidth: 120}, 1: {cellWidth: 40, halign: 'right'} },
+          bodyStyles: {
+            valign: 'top'
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        // Thank you and TOTAL row
+        let finalY = doc.lastAutoTable.finalY;
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(10);
+        doc.text('Thank you for your business!', 16, finalY + 8);
+
+        // TOTAL row
+        doc.setFillColor(240,240,240);
+        doc.rect(90, finalY + 2, 70, 10, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('TOTAL', 120, finalY + 10, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.text('$', 150, finalY + 10, { align: 'right' });
+        doc.text(charge.toFixed(2), 180, finalY + 10, { align: 'right' });
+
+        doc.save(`Enamel_pure_invoice${tx.Tid}.pdf`);
+      };
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Device Transactions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1744a4;
+      --background: linear-gradient(135deg, #f7fafd 0%, #eaf1fb 100%);
+      --background-dark: linear-gradient(135deg, #181c26 0%, #23283a 100%);
+      --card-bg: rgba(255,255,255,0.85);
+      --card-bg-dark: rgba(34, 39, 54, 0.88);
+      --glass-blur: 14px;
+      --text-main: #23272f;
+      --text-main-dark: #f3f6fa;
+      --text-secondary: #6b7280;
+      --text-secondary-dark: #b8c1d6;
+      --border-radius: 18px;
+      --shadow: 0 6px 32px rgba(37, 99, 235, 0.13);
+      --shadow-dark: 0 6px 32px rgba(30, 41, 59, 0.35);
+      --accent: #f59e42;
+      --transition: 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
+      padding: 0;
+      transition: background var(--transition), color var(--transition);
+    }
+    body.dark {
+      background: var(--background-dark);
+      color: var(--text-main-dark);
+    }
+    header {
+      padding: 2.5rem 1rem 1.3rem 1rem;
+      text-align: center;
+    }
+    .greeting {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.7rem;
+      letter-spacing: 0.01em;
+      transition: color var(--transition);
+    }
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin: 0;
+      line-height: 1.1;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      transition: background var(--transition);
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.5rem;
+      z-index: 100;
+      background: var(--card-bg);
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    body.dark .theme-toggle {
+      background: var(--card-bg-dark);
+      box-shadow: var(--shadow-dark);
+    }
+    .search-bar-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2rem;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .search-bar-container input[type="text"] {
+      width: 270px;
+      padding: 0.85rem 1.1rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: var(--border-radius);
+      font-size: 1.1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition), background var(--transition), color var(--transition);
+      background: #f9fafb;
+      color: var(--text-main);
+    }
+    body.dark .search-bar-container input[type="text"] {
+      background: #23283a;
+      color: var(--text-main-dark);
+      border-color: #353a50;
+    }
+    .search-bar-container input[type="text"]:focus {
+      border-color: var(--primary);
+      background: #fff;
+    }
+    .search-bar-container button {
+      padding: 0.85rem 1.5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+      letter-spacing: 0.01em;
+    }
+    .search-bar-container button:hover,
+    .search-bar-container button:focus {
+      background: var(--primary-dark);
+      box-shadow: 0 4px 16px rgba(37,99,235,0.13);
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .filter-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+    .filter-controls label {
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 1.1rem;
+      transition: color var(--transition);
+    }
+    body.dark .filter-controls label {
+      color: var(--text-secondary-dark);
+    }
+    .filter-controls select {
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--border-radius);
+      border: 1.5px solid #d1d5db;
+      font-size: 1.1rem;
+      background: #f9fafb;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color var(--transition), background var(--transition), color var(--transition);
+    }
+    body.dark .filter-controls select {
+      background: #23283a;
+      color: var(--text-main-dark);
+      border-color: #353a50;
+    }
+    .filter-controls select:focus {
+      border-color: var(--primary);
+      background: #fff;
+    }
+    /* Bento 3x3 Grid */
+    #transactions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.3rem;
+      max-width: 1300px;
+      margin: 0 auto;
+      animation: fadeIn 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(32px);}
+      to { opacity: 1; transform: none;}
+    }
+    .transaction-card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 2.1rem 1.7rem 1.4rem 1.7rem;
+      min-width: 0;
+      border-left: 7px solid var(--primary);
+      transition: box-shadow var(--transition), transform var(--transition), background var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      outline: none;
+      backdrop-filter: blur(var(--glass-blur));
+      animation: fadeInCard 0.8s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: scale(0.98);}
+      to { opacity: 1; transform: scale(1);}
+    }
+    body.dark .transaction-card {
+      background: var(--card-bg-dark);
+      box-shadow: var(--shadow-dark);
+      border-left: 7px solid var(--accent);
+    }
+    .transaction-card:focus {
+      box-shadow: 0 0 0 4px var(--primary);
+    }
+    .transaction-card:hover {
+      box-shadow: 0 12px 36px rgba(37, 99, 235, 0.19);
+      transform: translateY(-5px) scale(1.025);
+      background: rgba(255,255,255,0.93);
+    }
+    body.dark .transaction-card:hover {
+      background: rgba(34,39,54,0.97);
+    }
+    .transaction-item {
+      display: flex;
+      align-items: flex-start;
+      font-size: 1.15rem;
+      transition: color var(--transition);
+    }
+    .transaction-label {
+      font-weight: 700;
+      color: var(--text-secondary);
+      min-width: 100px;
+      flex-shrink: 0;
+      letter-spacing: 0.01em;
+      font-size: 1.13rem;
+      transition: color var(--transition);
+    }
+    body.dark .transaction-label {
+      color: var(--text-secondary-dark);
+    }
+    .transaction-value {
+      color: var(--text-main);
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      font-weight: 600;
+      margin-left: 0.7em;
+      flex: 1;
+      font-size: 1.17rem;
+      transition: color var(--transition);
+      animation: textFadeIn 0.9s;
+    }
+    body.dark .transaction-value {
+      color: var(--text-main-dark);
+    }
+    @keyframes textFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .transaction-item .transaction-label {
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .transaction-item .transaction-value {
+      letter-spacing: 0.01em;
+    }
+    .transaction-item:first-child .transaction-value {
+      font-size: 1.35rem;
+      color: var(--primary);
+      letter-spacing: 0.03em;
+    }
+    body.dark .transaction-item:first-child .transaction-value {
+      color: var(--accent);
+    }
+    .footer {
+      text-align: center;
+      margin-top: 3.5rem;
+      font-size: 1.05rem;
+      color: #9ca3af;
+      letter-spacing: 0.02em;
+      padding-bottom: 2.5rem;
+    }
+    body.dark .footer {
+      color: #6b7280;
+    }
+    /* Skeleton Loader */
+    .skeleton {
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite linear;
+      min-height: 200px;
+      position: relative;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    .skeleton-line {
+      height: 20px;
+      background: #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      width: 80%;
+      margin-left: 10%;
+      animation: skeleton-loading 1.5s infinite linear;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 2.3rem 0 0 0;
+    }
+    .pagination button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.2rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-weight: 700;
+      transition: background var(--transition);
+    }
+    .pagination button:disabled {
+      background: #d1d5db;
+      color: #9ca3af;
+      cursor: default;
+    }
+    .pagination .page-num {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1.18rem;
+      padding: 0 0.7rem;
+    }
+    body.dark .pagination .page-num {
+      color: var(--accent);
+    }
+    /* Responsive */
+    @media (max-width: 1200px) {
+      #transactions {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 800px) {
+      #transactions {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+      }
+      .transaction-card {
+        min-width: 0;
+        max-width: 98vw;
+        padding: 1.2rem 0.7rem;
+      }
+      .search-bar-container input[type="text"] {
+        width: 80vw;
+        min-width: 0;
+      }
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+      background: #eaf1fb;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c7d3ea;
+      border-radius: 10px;
+    }
+    body.dark ::-webkit-scrollbar {
+      background: #23283a;
+    }
+    body.dark ::-webkit-scrollbar-thumb {
+      background: #353a50;
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+  <header>
+    <div class="greeting" id="greeting"></div>
+    <h1>Device Transactions</h1>
+  </header>
+  <!-- Search Bar -->
+  <form class="search-bar-container" id="searchForm" autocomplete="off" role="search" aria-label="Transaction search">
+    <input type="text" id="searchInput" placeholder="Search by Transaction ID..." required aria-label="Transaction ID" />
+    <button type="submit" aria-label="Search transactions">Go</button>
+  </form>
+  <!-- Filter Controls -->
+  <div class="filter-controls" id="filterControls">
+    <label for="sortBy">Sort by:</label>
+    <select id="sortBy" aria-label="Sort transactions">
+      <option value="date">Date (Newest)</option>
+      <option value="id">ID</option>
+      <option value="duration">Duration</option>
+    </select>
+  </div>
+  <!-- Transactions Page -->
+  <div id="transactions" role="region" aria-label="Transaction list"></div>
+  <div class="pagination" id="pagination"></div>
+  <div class="footer">Designed by humans &middot; for humans</div>
+  <script>
+    // --- Theme Toggle (Dark/Light Mode) ---
+    const themeToggle = document.getElementById('themeToggle');
+    function setTheme(dark) {
+      document.body.classList.toggle('dark', dark);
+      themeToggle.innerHTML = dark ? '☀️' : '🌙';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    // Detect system preference or saved
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark));
+    themeToggle.onclick = () => setTheme(!document.body.classList.contains('dark'));
+
+    // --- Constants & State ---
+    function getLiveTransactionsUrl() {
+      return "https://siqolawsbucket.s3.us-east-1.amazonaws.com/Button_details.json?nocache=" + Date.now();
+    }
+    const ITEMS_PER_PAGE = 9;
+    let transactions = [];
+    let filteredTransactions = [];
+    let currentPage = 1;
+    let currentSort = "date";
+
+    // --- Utility Functions ---
+    function sanitizeInput(input) {
+      return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    function sortTransactions(transactions, sortBy) {
+      return [...transactions].sort((a, b) => {
+        switch(sortBy) {
+          case 'date':
+            return new Date(b.Date) - new Date(a.Date);
+          case 'id':
+            return (a.Id ?? '').localeCompare(b.Id ?? '');
+          case 'duration':
+            return parseFloat(b.Duration ?? 0) - parseFloat(a.Duration ?? 0);
+          default:
+            return 0;
+        }
+      });
+    }
+    // --- Skeleton Loader ---
+    function showLoadingSkeleton() {
+      const container = document.getElementById('transactions');
+      let skeletonHTML = '';
+      for (let i = 0; i < ITEMS_PER_PAGE; i++) {
+        skeletonHTML += `
+          <div class="transaction-card skeleton" aria-hidden="true">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+        `;
+      }
+      container.innerHTML = skeletonHTML;
+    }
+    // --- Rendering ---
+    function renderTransactionsPage(page) {
+      const container = document.getElementById('transactions');
+      container.innerHTML = '';
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = filteredTransactions.slice(start, end);
+
+      if (pageItems.length === 0) {
+        container.innerHTML = "<div style='color:#6b7280;font-size:1.2em;margin:2em 0;'>No transactions available.</div>";
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      pageItems.forEach((tx) => {
+        const card = document.createElement('div');
+        card.className = 'transaction-card';
+        card.tabIndex = 0;
+        card.setAttribute('role', 'article');
+        card.setAttribute('aria-label', `Transaction ${tx.Tid || '-'}`);
+        card.innerHTML = `
+          <div class="transaction-item"><span class="transaction-label">TID:</span><span class="transaction-value">${sanitizeInput(tx.Tid ?? '-')}</span></div>
+          <div class="transaction-item"><span class="transaction-label">ID:</span><span class="transaction-value">${sanitizeInput(tx.Id ?? '-')}</span></div>
+          <div class="transaction-item"><span class="transaction-label">Date:</span><span class="transaction-value">${sanitizeInput(tx.Date ?? '-')}</span></div>
+          <div class="transaction-item"><span class="transaction-label">Time:</span><span class="transaction-value">${sanitizeInput(tx.Current_time ?? '-')}</span></div>
+          <div class="transaction-item"><span class="transaction-label">Button:</span><span class="transaction-value">${sanitizeInput(tx.Btn ?? '-')}</span></div>
+          <div class="transaction-item"><span class="transaction-label">Duration:</span><span class="transaction-value">${sanitizeInput(tx.Duration ?? '-')}</span></div>
+        `;
+        fragment.appendChild(card);
+      });
+      container.appendChild(fragment);
+    }
+    function renderPagination() {
+      const pagination = document.getElementById('pagination');
+      const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+      if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+      }
+      let html = '';
+      html += `<button ${currentPage === 1 ? 'disabled' : ''} aria-label="Previous page" onclick="goToPage(${currentPage - 1})">&lt;</button>`;
+      html += `<span class="page-num" aria-label="Page ${currentPage} of ${totalPages}">${currentPage} / ${totalPages}</span>`;
+      html += `<button ${currentPage === totalPages ? 'disabled' : ''} aria-label="Next page" onclick="goToPage(${currentPage + 1})">&gt;</button>`;
+      pagination.innerHTML = html;
+    }
+    // --- Pagination Navigation ---
+    window.goToPage = function(page) {
+      const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+      if (page < 1 || page > totalPages) return;
+      currentPage = page;
+      renderTransactionsPage(currentPage);
+      renderPagination();
+      setTimeout(() => {
+        const firstCard = document.querySelector('.transaction-card');
+        if (firstCard) firstCard.focus();
+      }, 100);
+    };
+    // --- Load Transactions ---
+    function loadTransactions() {
+      showLoadingSkeleton();
+      fetch(getLiveTransactionsUrl())
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          transactions = Array.isArray(data) ? data : [];
+          applySortAndRender();
+        })
+        .catch(err => {
+          document.getElementById('transactions').innerHTML = "<div style='color: #ef4444; font-weight:600;'>⚠️ Failed to load data. Please try again later.</div>";
+          document.getElementById('pagination').innerHTML = '';
+        });
+    }
+    function applySortAndRender() {
+      filteredTransactions = sortTransactions(transactions, currentSort);
+      currentPage = 1;
+      renderTransactionsPage(currentPage);
+      renderPagination();
+    }
+    // --- Search Form ---
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const input = document.getElementById('searchInput');
+      const tid = sanitizeInput(input.value.trim());
+      if (tid) {
+        window.location.href = `gen_pdf.html?tid=${encodeURIComponent(tid)}`;
+      }
+    });
+    // --- Sorting ---
+    document.getElementById('sortBy').addEventListener('change', function(e) {
+      currentSort = e.target.value;
+      applySortAndRender();
+    });
+    // --- Initial Load ---
+    loadTransactions();
+  </script>
+</body>
+</html>
